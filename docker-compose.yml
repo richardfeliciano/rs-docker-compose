@@ -1,0 +1,95 @@
+version: "3.8"
+
+services:
+  app-nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./cms.app.com.br:/var/www/html/cms.app.com.br
+      - ./apis.app.com.br:/var/www/html/apis.app.com.br
+      - ./notify.app.com.br:/var/www/html/notify.app.com.br
+      - ./www.appsexpress.com.br:/var/www/html/www.appsexpress.com.br
+      - ./intranet.appsexpress.com.br:/var/www/html/intranet.appsexpress.com.br
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app-php8
+      - app-php56
+      - app-php7
+    networks:
+      - app
+
+  app-php8:
+    image: php:8.3-fpm
+    volumes:
+      - ./cms.app.com.br:/var/www/html/cms.app.com.br
+    networks:
+      - app
+    build:
+      context: ./php/8
+      dockerfile: Dockerfile
+
+  app-php7:
+    image: php:7.3-fpm
+    volumes:
+      - ./notify.app.com.br:/var/www/html/notify.app.com.br
+      - ./apis.app.com.br:/var/www/html/apis.app.com.br
+    networks:
+      - app
+
+  app-php56:
+    image: php:5.6-fpm
+    volumes:
+      - ./www.appsexpress.com.br:/var/www/html/www.appsexpress.com.br
+      - ./intranet.appsexpress.com.br:/var/www/html/intranet.appsexpress.com.br
+    build:
+      context: ./php/56
+      dockerfile: Dockerfile
+    networks:
+      - app
+
+  app-mysql8:
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: cms
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    networks:
+      - app
+
+  app-mysql57:
+    image: mysql:5.7
+    volumes:
+      - ./mysql/57/my.cnf:/etc/my.cnf
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: app
+      MYSQL_USER: forge
+      MYSQL_PASSWORD: password
+    ports:
+      - "3307:3306"
+    networks:
+      - app
+
+  app-mailpit:
+    image: "axllent/mailpit:latest"
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - app
+  app-redis:
+    image: redis
+    command: redis-server --requirepass Redis2019!
+    ports:
+      - "6379:6379"
+    networks:
+      - app
+networks:
+  app:
+    driver: bridge
